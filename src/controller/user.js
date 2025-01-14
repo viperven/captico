@@ -64,7 +64,7 @@ const login = async (req, res) => {
     const isUserExists = await User.findOne({ email });
 
     if (!isUserExists) {
-      const customError = new Error("user nost exists !");
+      const customError = new Error("user does not exist!");
       customError.statusCode = 400;
       throw customError;
     }
