@@ -17,6 +17,7 @@ app.use(
 
 //ALL ROUTES
 app.use("/auth", require("./src/routes/user"));
+app.use("/course", require("./src/routes/course"));
 
 connectDB()
   .then(() => {
