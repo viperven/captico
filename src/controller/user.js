@@ -1,7 +1,7 @@
 const User = require("../models/user");
-const { validateRegister } = require("../validation/validate");
+const { validateRegister, validateLogin } = require("../validation/validate");
 
-//register uer or buyer
+//register user or buyer
 const register = async (req, res) => {
   try {
     validateRegister(req);
@@ -55,4 +55,61 @@ const register = async (req, res) => {
   }
 };
 
-module.exports = { register };
+//login
+const login = async (req, res) => {
+  try {
+    validateLogin(req);
+    const { email, password } = req.body;
+
+    const isUserExists = await User.findOne({ email });
+
+    if (!isUserExists) {
+      const customError = new Error("user nost exists !");
+      customError.statusCode = 400;
+      throw customError;
+    }
+
+    const isPasswordMatched = await isUserExists.validatePassword(password);
+
+    if (!isPasswordMatched) {
+      return res.status(400).json({
+        isSuccess: false,
+        message: `${password} is incorrect password `,
+      });
+    }
+
+    const token = await isUserExists.generateAuthToken();
+
+    const safeData = {
+      name: isUserExists.name,
+      photoUrl: isUserExists.photoUrl,
+      email: isUserExists.email,
+      role: isUserExists.role,
+      purchasedCourses: isUserExists.purchasedCourses,
+      createdCourses: isUserExists.createdCourses,
+    };
+
+    res.status(200).json({
+      isSuccess: true,
+      message: "logged in sucessfulyy",
+      apiData: safeData,
+      token: token,
+    });
+  } catch (err) {
+    console.log(err?.message);
+
+    if (err.statusCode === 400) {
+      return res.status(err.statusCode).json({
+        isSuccess: false,
+        message: err.message,
+      });
+    }
+
+    res.status(500).json({
+      isSuccess: false,
+      message: "Server error. Please try again later.",
+    });
+  }
+};
+
+module.exports = { register, login };

@@ -28,6 +28,17 @@ const validateRegister = (req) => {
   }
 };
 
+const validateLogin = (req) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    const customError = new Error("Please provide both email and password!");
+    customError.statusCode = 400;
+    throw customError;
+  }
+};
+
 module.exports = {
   validateRegister,
+  validateLogin,
 };
