@@ -1,4 +1,3 @@
-
 const User = require("../models/user");
 const Purchase = require("../models/purchase");
 const Course = require("../models/course");
@@ -9,7 +8,6 @@ const createCourse = async (req, res) => {
   try {
     validateCreateCourse(req);
     const { title, description, price } = req.body;
-    console.log(req.user);
     const userId = req.user._id;
 
     // Create the course
@@ -56,7 +54,10 @@ const getCourseById = async (req, res) => {
     }
 
     // Get a single course by ID
-    const course = await Course.findById(courseId).populate('createdBy', 'name email');
+    const course = await Course.findById(courseId).populate(
+      "createdBy",
+      "name email"
+    );
     if (!course) {
       const customError = new Error("Course not found!");
       customError.statusCode = 400;
@@ -68,7 +69,6 @@ const getCourseById = async (req, res) => {
       message: "Course retrieved successfully!",
       apiData: course,
     });
-
   } catch (err) {
     console.log(err?.message);
 
@@ -96,12 +96,10 @@ const getAllCourses = async (req, res) => {
       title: { $regex: search, $options: "i" }, // Case-insensitive search
     };
 
-
     const courses = await Course.find(query)
       .skip(skip)
       .limit(parseInt(limit))
       .populate("createdBy", "name email");
-
 
     const totalCourses = await Course.countDocuments(query);
 
@@ -143,7 +141,6 @@ const updateCourse = async (req, res) => {
       customError.statusCode = 400;
       throw customError;
     }
-
 
     const updatedCourse = await Course.findByIdAndUpdate(
       courseId,
@@ -189,7 +186,7 @@ const deleteCourse = async (req, res) => {
       const customError = new Error("Course not found!");
       customError.statusCode = 400;
       throw customError;
-    };
+    }
 
     res.status(200).json({
       isSuccess: true,
@@ -213,51 +210,56 @@ const deleteCourse = async (req, res) => {
   }
 };
 
+//check user id and course id should not exist together
 const purchaseCourse = async (req, res) => {
   try {
     const { courseId, priceAtPurchase } = req.body;
     const { id } = req.user;
-    console.log(req.user);
 
     if (!courseId || !priceAtPurchase) {
-      const customError = new Error("courseId and priceAtPurchase is mandatory !");
+      const customError = new Error(
+        "courseId and priceAtPurchase is mandatory !"
+      );
       customError.statusCode = 400;
       throw customError;
     }
-
-
-    // Find the user and course
-    const user = await User.findById(id);
-    if (!user) {
-      const customError = new Error("user not found !");
-      customError.statusCode = 400;
-      throw customError;
-    };
 
     const course = await Course.findById(courseId);
     if (!course) {
       const customError = new Error("Course not found !");
       customError.statusCode = 400;
       throw customError;
-    };
+    }
 
     // Prevent users from buying their own courses
-    if (String(course.createdBy) === String(user._id)) {
+    if (String(course.createdBy) === String(id)) {
       return res.status(400).json({
         isSuccess: false,
         message: "You cannot purchase your own course.",
       });
     }
 
+    const userHasCourse = await Purchase.findOne({
+      $and: [{ course: courseId }, { buyer: id }],
+    });
+
+    if (userHasCourse) {
+      return res.status(200).json({
+        isSuccess: false,
+        message: "user has already purchased this course!",
+      });
+    }
+
     // Record the purchase
     const purchase = new Purchase({
-      course:courseId,
-      buyer: user._id,
-      priceAtPurchase
+      course: courseId,
+      buyer: id,
+      priceAtPurchase,
     });
     await purchase.save();
 
     // Update user's purchasedCourses
+    const user = await User.findById(id);
     user.purchasedCourses.push(courseId);
     await user.save();
 
@@ -267,7 +269,7 @@ const purchaseCourse = async (req, res) => {
       apiData: {
         purchaseId: purchase._id,
         courseId: courseId,
-        userId: user._id,
+        userId: id,
       },
     });
   } catch (err) {
@@ -293,5 +295,5 @@ module.exports = {
   getAllCourses,
   updateCourse,
   deleteCourse,
-  purchaseCourse
+  purchaseCourse,
 };

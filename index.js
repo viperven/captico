@@ -2,6 +2,7 @@ const cookieParser = require("cookie-parser");
 const express = require("express");
 const cors = require("cors");
 const connectDB = require("./src/config/db");
+const { insertDatainDb } = require("./src/insertDatainDb");
 const app = express();
 const port = 3000;
 
@@ -31,5 +32,6 @@ connectDB()
   });
 
 app.get("/", (req, res) => {
+  // insertDatainDb(req, res);
   res.send("Welcome to my API!");
 });

@@ -21,8 +21,8 @@ const validateRegister = (req) => {
     throw customError;
   }
 
-  if (!name || !role) {
-    const customError = new Error("name and role is mandatory !");
+  if (!name) {
+    const customError = new Error("name is mandatory !");
     customError.statusCode = 400;
     throw customError;
   }
